@@ -198,8 +198,11 @@ fun PolyWordleUI(game: PolyWordleGame) {
             }
         }
 
-        /* victory! */
+        /* DEBUG: Show hidden word
         Text(text = "HIDDEN WORD: ${game.hiddenWord}", modifier = Modifier.padding(8.dp).align(Alignment.BottomStart))
+        */
+
+        /* victory! */
         if (game.flags["wordRight"]!!) {
             Snackbar(Modifier.padding(8.dp).align(Alignment.BottomCenter), shape = RoundedCornerShape(12.dp)) {
                 Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
