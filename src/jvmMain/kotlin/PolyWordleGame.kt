@@ -99,6 +99,7 @@ class PolyWordleGame(
     }
 
     private fun resetStat() {
+        hiddenWordSymbolsStat = mutableMapOf()
         hiddenWordSymbols.forEach {
             if (it !in hiddenWordSymbolsStat.keys) {
                 hiddenWordSymbolsStat[it] = 1
