@@ -5,13 +5,14 @@ import androidx.compose.material.darkColors
 import androidx.compose.material.lightColors
 import androidx.compose.ui.graphics.Color
 
+/* dark theme */
 private val DarkColorScheme = darkColors(
     onSurface = Color.White,
     onBackground = Color.DarkGray,
     primary = Color(0xffdf78ef)
-
 )
 
+/* light theme */
 private val LightColorScheme = lightColors(
     onSurface = Color.DarkGray,
     onBackground = Color.LightGray,

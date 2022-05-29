@@ -1,5 +1,8 @@
 package enums
 
 enum class BoxState {
-    EMPTY, DOESNT_EXIST /* серое */, AT_THIS_POSITION /* зеленое */, EXISTS /* желтое */
+    EMPTY, /* light gray */
+    DOESNT_EXIST, /* gray */
+    AT_THIS_POSITION, /* green */
+    EXISTS /* yellow */
 }

@@ -2,7 +2,6 @@ import androidx.compose.foundation.text.isTypedEvent
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -12,11 +11,18 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import data.Box
 import enums.BoxState
+import ui.screens.PolyWordleUI
+import ui.themes.PolyWordleTheme
 import java.io.File
 
-class PolyWordleGame(var boxes: MutableMap<Pair<Int, Int>, Box>, var flags: MutableMap<String, Boolean>) {
+class PolyWordleGame(
+    var boxes: MutableMap<Pair<Int, Int>, Box>,
+    var flags: MutableMap<String, Boolean>,
+    var keys: MutableMap<String, Boolean>,
+) {
     companion object {
-        private fun clearWords(boxes: MutableMap<Pair<Int, Int>, Box>) {
+        var theme = PolyWordleTheme(false)
+        fun clearWords(boxes: MutableMap<Pair<Int, Int>, Box>) {
             boxes.apply {
                 for (word in 0..5) {
                     for (symbol in 0..4) {
@@ -26,23 +32,30 @@ class PolyWordleGame(var boxes: MutableMap<Pair<Int, Int>, Box>, var flags: Muta
             }
         }
 
+        fun clearKeys(keys: MutableMap<String, Boolean>) {
+            "йцукенгшщзхъфывапролджэячсмитьбю".forEach {
+                keys[it.toString()] = true
+            }
+        }
+
         @JvmStatic
         fun main(args: Array<String>) = application {
-            val boxes = remember {
-                mutableStateMapOf<Pair<Int, Int>, Box>().apply {
-                    clearWords(this)
-                }
-            }
+            val boxes = remember { mutableStateMapOf<Pair<Int, Int>, Box>().apply { clearWords(this) } }
+            val keys = remember { mutableStateMapOf<String, Boolean>().apply { clearKeys(this) } }
             val flags = remember {
                 mutableStateMapOf<String, Boolean>().apply {
                     put("wordRight", false)
+                    put("failed", false)
+                    put("wordNonExistent", false)
                 }
             }
-            val game = PolyWordleGame(boxes, flags)
+
+            val game = PolyWordleGame(boxes, flags, keys)
+
             Window(
                 title = "PolyWordle",
                 onCloseRequest = ::exitApplication,
-                state = rememberWindowState(position = WindowPosition(540.dp, 110.dp), size = DpSize(450.dp, 640.dp)),
+                state = rememberWindowState(position = WindowPosition(540.dp, 0.dp), size = DpSize(450.dp, 800.dp)),
                 resizable = false,
                 onKeyEvent = {
                     if ((it.type == KeyEventType.KeyDown) && ((it.nativeKeyEvent as java.awt.event.KeyEvent).keyCode == 8)) {
@@ -53,7 +66,10 @@ class PolyWordleGame(var boxes: MutableMap<Pair<Int, Int>, Box>, var flags: Muta
                     }
                     if (it.isTypedEvent) {
                         val keyEvent = it.nativeKeyEvent as java.awt.event.KeyEvent
-                        game.addSymbol(keyEvent.keyChar.uppercase())
+                        val char = keyEvent.keyChar.uppercase()[0]
+                        if (char in 'А'..'Я') {
+                            game.addSymbol(char.toString())
+                        }
                     }
                     true
                 }
@@ -63,19 +79,43 @@ class PolyWordleGame(var boxes: MutableMap<Pair<Int, Int>, Box>, var flags: Muta
         }
     }
 
+    private val map = mutableMapOf<String, Int>() /* кашка к - 2 а - 2 ш -2*/
+
+    /* choosing a new word */
     private fun newHiddenWord() {
         hiddenWord = File("singular.txt").readLines().random().uppercase()
         hiddenWordSymbols = hiddenWord.split("").filter { it != "" }
+        hiddenWordSymbols.forEach {
+            if (map.containsKey(it)) {
+                map[it] = map[it]!! + 1
+            } else {
+                map[it] = 1
+            }
+        }
+        hiddenWordSymbolsStat = mutableMapOf()
+        resetStat()
+    }
+
+    private fun resetStat() {
+        hiddenWordSymbols.forEach {
+            if (it !in hiddenWordSymbolsStat.keys) {
+                hiddenWordSymbolsStat[it] = 1
+            } else {
+                hiddenWordSymbolsStat[it] = hiddenWordSymbolsStat[it]!! + 1
+            }
+        }
     }
 
     lateinit var hiddenWord: String
     private lateinit var hiddenWordSymbols: List<String>
-    var x = 0
-    var y = 0
-    var wordOngoing = true
+    private lateinit var hiddenWordSymbolsStat: MutableMap<String, Int>
+    private var x = 0 // word
+    private var y = 0 // symbol
+    private var wordOngoing = true
 
+    /* adding a new symbol from a word */
     fun addSymbol(symbol: String): Boolean {
-        if (wordOngoing) {
+        return if (wordOngoing) {
             boxes[Pair(x, y)] = Box(
                 symbol = symbol
             )
@@ -83,13 +123,14 @@ class PolyWordleGame(var boxes: MutableMap<Pair<Int, Int>, Box>, var flags: Muta
             if (y == 5) {
                 wordOngoing = false
             }
-            return x == 6
+            true
         } else {
-            return false
+            false
         }
     }
 
-    private fun removeLastSymbol() {
+    /* delete a last symbol from a word */
+    fun removeLastSymbol() {
         if (y != 0) {
             y--
         } else {
@@ -101,30 +142,65 @@ class PolyWordleGame(var boxes: MutableMap<Pair<Int, Int>, Box>, var flags: Muta
         }
     }
 
+    /* check the final word */
     fun submitWord() {
         if (!wordOngoing) {
-            boxes.onEach { (idx, box) ->
-                if (idx.first == x) {
-                    boxes[idx] = Box(
+            var word = ""
+            for (i in 0..4) {
+                word += boxes[Pair(x, i)]!!.symbol
+            }
+            println(word)
+            if (word.lowercase() in File("singular.txt").readLines()) {
+                for (y in 0..4) {
+                    val box = boxes[Pair(x, y)]!!
+                    boxes[Pair(x, y)] = Box(
                         when (box.symbol) {
                             in hiddenWordSymbols -> {
-                                if (idx.second in getSymbolPos(box.symbol)) {
+                                if (y in getSymbolPos(box.symbol) && hiddenWordSymbolsStat[box.symbol]!! >= 1) {
+                                    hiddenWordSymbolsStat[box.symbol] = hiddenWordSymbolsStat[box.symbol]!! - 1
                                     BoxState.AT_THIS_POSITION
                                 } else {
-                                    BoxState.EXISTS
+                                    BoxState.DOESNT_EXIST
                                 }
                             }
                             else -> BoxState.DOESNT_EXIST
                         }, box.symbol
                     )
                 }
+                for (y in 0..4) {
+                    val box = boxes[Pair(x, y)]!!
+                    boxes[Pair(x, y)] = Box(
+                        when (box.symbol) {
+                            in hiddenWordSymbols -> {
+                                if (y in getSymbolPos(box.symbol)) {
+                                    BoxState.AT_THIS_POSITION
+                                } else {
+                                    if (hiddenWordSymbolsStat[box.symbol]!! >= 1) {
+                                        hiddenWordSymbolsStat[box.symbol] = hiddenWordSymbolsStat[box.symbol]!! - 1
+                                        BoxState.EXISTS
+                                    } else {
+                                        BoxState.DOESNT_EXIST
+                                    }
+                                }
+                            }
+                            else -> {
+                                keys[box.symbol.lowercase()] = false
+                                BoxState.DOESNT_EXIST
+                            }
+                        }, box.symbol
+                    )
+                }
+                resetStat()
+                flags["wordRight"] = word == hiddenWord
+                wordOngoing = true
+                x++
+                y = 0
+                if (x == 6 && !flags["wordRight"]!!) {
+                    flags["failed"] = true
+                }
+            } else {
+                flags["wordNonExistent"] = true
             }
-            if (boxes.filter { it.key.first == x }.values.all { it.state == BoxState.AT_THIS_POSITION }) {
-                flags.put("wordRight", true)
-            }
-            wordOngoing = true
-            x++
-            y = 0
         }
     }
 
@@ -142,13 +218,13 @@ class PolyWordleGame(var boxes: MutableMap<Pair<Int, Int>, Box>, var flags: Muta
         x = 0
         y = 0
         flags["wordRight"] = false
+        flags["failed"] = false
         clearWords(boxes)
+        clearKeys(keys)
         newHiddenWord()
     }
 
     init {
         newHiddenWord()
-        println(hiddenWord)
-        println(hiddenWordSymbols)
     }
 }
