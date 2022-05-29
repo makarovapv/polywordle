@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import enums.BoxState
 import ui.themes.PolyWordleTheme
-import java.io.File
 
 @Composable
 @Preview
@@ -39,7 +38,7 @@ fun PolyWordleUI(game: PolyWordleGame) {
             text = "PolyWordle",
             fontWeight = FontWeight.Bold,
             fontSize = 36.sp,
-            fontFamily = FontFamily(Font(File("font.ttf"))),
+            fontFamily = FontFamily(Font("font.ttf")),
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
             color = colors.onSurface

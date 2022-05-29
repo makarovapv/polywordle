@@ -3,6 +3,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.res.useResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -13,7 +14,6 @@ import data.Box
 import enums.BoxState
 import ui.screens.PolyWordleUI
 import ui.themes.PolyWordleTheme
-import java.io.File
 
 class PolyWordleGame(
     var boxes: MutableMap<Pair<Int, Int>, Box>,
@@ -80,10 +80,12 @@ class PolyWordleGame(
     }
 
     private val map = mutableMapOf<String, Int>() /* кашка к - 2 а - 2 ш -2*/
-
+    private val lines = useResource("singular.txt") {
+        it.reader().readLines()
+    }
     /* choosing a new word */
     private fun newHiddenWord() {
-        hiddenWord = File("singular.txt").readLines().random().uppercase()
+        hiddenWord = lines.random().uppercase()
         hiddenWordSymbols = hiddenWord.split("").filter { it != "" }
         hiddenWordSymbols.forEach {
             if (map.containsKey(it)) {
@@ -150,7 +152,7 @@ class PolyWordleGame(
                 word += boxes[Pair(x, i)]!!.symbol
             }
             println(word)
-            if (word.lowercase() in File("singular.txt").readLines()) {
+            if (word.lowercase() in lines) {
                 for (y in 0..4) {
                     val box = boxes[Pair(x, y)]!!
                     boxes[Pair(x, y)] = Box(
