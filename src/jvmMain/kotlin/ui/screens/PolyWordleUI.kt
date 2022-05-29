@@ -49,6 +49,7 @@ fun PolyWordleUI(game: PolyWordleGame) {
             /* six attempts */
             items(6) { idxWord ->
                 LazyRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                    /* five symbols */
                     items(5) { idxSymbol ->
                         val box = game.boxes[Pair(idxWord, idxSymbol)]!!
                         Box(
@@ -76,6 +77,7 @@ fun PolyWordleUI(game: PolyWordleGame) {
             }
         }
 
+        /* working with the gaming keyboard */
         val keyboard = mutableListOf(
             "йцукенгшщзхъ←".map { it.toString() },
             "фывапролджэ".map { it.toString() },

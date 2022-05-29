@@ -32,6 +32,7 @@ class PolyWordleGame(
             }
         }
 
+        /* clear keyboard */
         fun clearKeys(keys: MutableMap<String, Boolean>) {
             "йцукенгшщзхъфывапролджэячсмитьбю".forEach {
                 keys[it.toString()] = true
@@ -52,15 +53,18 @@ class PolyWordleGame(
 
             val game = PolyWordleGame(boxes, flags, keys)
 
+            /* getting started with the app */
             Window(
                 title = "PolyWordle",
                 onCloseRequest = ::exitApplication,
                 state = rememberWindowState(position = WindowPosition(540.dp, 0.dp), size = DpSize(450.dp, 800.dp)),
                 resizable = false,
                 onKeyEvent = {
+                    /* backspace key */
                     if ((it.type == KeyEventType.KeyDown) && ((it.nativeKeyEvent as java.awt.event.KeyEvent).keyCode == 8)) {
                         game.removeLastSymbol()
                     }
+                    /* enter key */
                     if ((it.type == KeyEventType.KeyDown) && ((it.nativeKeyEvent as java.awt.event.KeyEvent).keyCode == 10)) {
                         game.submitWord()
                     }
@@ -79,25 +83,19 @@ class PolyWordleGame(
         }
     }
 
-    private val map = mutableMapOf<String, Int>() /* кашка к - 2 а - 2 ш -2*/
     private val lines = useResource("singular.txt") {
         it.reader().readLines()
     }
+
     /* choosing a new word */
     private fun newHiddenWord() {
         hiddenWord = lines.random().uppercase()
         hiddenWordSymbols = hiddenWord.split("").filter { it != "" }
-        hiddenWordSymbols.forEach {
-            if (map.containsKey(it)) {
-                map[it] = map[it]!! + 1
-            } else {
-                map[it] = 1
-            }
-        }
         hiddenWordSymbolsStat = mutableMapOf()
         resetStat()
     }
 
+    /* getting hidden word statistics */
     private fun resetStat() {
         hiddenWordSymbolsStat = mutableMapOf()
         hiddenWordSymbols.forEach {
@@ -152,13 +150,13 @@ class PolyWordleGame(
             for (i in 0..4) {
                 word += boxes[Pair(x, i)]!!.symbol
             }
-            println(word)
             if (word.lowercase() in lines) {
                 for (y in 0..4) {
                     val box = boxes[Pair(x, y)]!!
                     boxes[Pair(x, y)] = Box(
                         when (box.symbol) {
                             in hiddenWordSymbols -> {
+                                /* first we check the exact position of the symbol */
                                 if (y in getSymbolPos(box.symbol) && hiddenWordSymbolsStat[box.symbol]!! >= 1) {
                                     hiddenWordSymbolsStat[box.symbol] = hiddenWordSymbolsStat[box.symbol]!! - 1
                                     BoxState.AT_THIS_POSITION
@@ -175,6 +173,8 @@ class PolyWordleGame(
                     boxes[Pair(x, y)] = Box(
                         when (box.symbol) {
                             in hiddenWordSymbols -> {
+                                /* if there is no exact position, then we look at the simple presence of
+                                 a symbol in the word */
                                 if (y in getSymbolPos(box.symbol)) {
                                     BoxState.AT_THIS_POSITION
                                 } else {
@@ -207,6 +207,7 @@ class PolyWordleGame(
         }
     }
 
+    /* getting the position of each symbol */
     private fun getSymbolPos(symbol: String): List<Int> {
         val result = mutableListOf<Int>()
         hiddenWordSymbols.forEachIndexed { idx, sym ->
@@ -217,6 +218,7 @@ class PolyWordleGame(
         return result
     }
 
+    /* reset old data and start a new game */
     fun newGame() {
         x = 0
         y = 0
@@ -224,10 +226,10 @@ class PolyWordleGame(
         flags["failed"] = false
         clearWords(boxes)
         clearKeys(keys)
-        newHiddenWord()
+        newHiddenWord() // needed to generate a new word
     }
 
     init {
-        newHiddenWord()
+        newHiddenWord() // it is necessary for correct operation
     }
 }
